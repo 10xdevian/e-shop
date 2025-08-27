@@ -1,82 +1,226 @@
-# Zepto
+# 🏦 Wallet System (User & Merchant) [MVP Articture click to see](https://ambiguous-modem-7dd.notion.site/IPAY-Paytm-Like-Wallet-AWelcome-to-the-first-React-Native-Mastery-Project-158d7abb0e8181118729d8d8ac5dbf7f)
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+Paytm-like wallet application built with **Next.js**, **Prisma**, **Turborepo**, and **Docker**.
+Supports both **User** and **Merchant** applications, along with a shared database and packages. where both **User** and **Merchant** have wallets to **send**, **receive**, **request**, and **refund** money. All transactions are **wallet-to-wallet**, with funds **loaded/unloaded** via a dummy bank integration.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+---
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## 🚀 Quick Start
 
-## Finish your CI setup
+Follow these steps to run **IPAY** locally:
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/yBXVt0k7Ws)
+```bash
+# 1️⃣ Clone the repository
+git clone https://github.com/10xdevian/IPAY.git
 
+# 2️⃣ Navigate into the project
+cd IPAY
 
-## Run tasks
+# 3️⃣ Install dependencies
+npm install
 
-To run the dev server for your app, use:
+# 4️⃣ Start PostgreSQL with Docker (if Docker Installed)
+docker compose up -d
 
-```sh
-npx nx serve auth-service
+# 5️⃣ Create environment file (IN root)
+cp .env.example.txt .env
+
+# Edit `.env` and update your DATABASE_URL
+
+# 6️⃣ (from the root) Run database migrations & generate Prisma Client
+
+npx prisma migrate dev --schema=packages/db/prisma/schema.prisma
+npx prisma generate --schema=packages/db/prisma/schema.prisma
+npx prisma studio --schema=packages/db/prisma/schema.prisma
+
+# 7️⃣ Start the development server
+npm run dev
+
 ```
 
-To create a production bundle:
+---
 
-```sh
-npx nx build auth-service
+# 🚀 Features Overview
+
+- ###### 👤 User
+
+  - Can register and complete KYC (Know Your Customer).
+
+  - Creates a 4-digit transaction PIN during KYC.
+
+  - Required for payments above ₹500.
+
+  - For payments ≤ ₹500, PIN is optional.
+
+  - Can add money to their wallet via dummy bank.
+  - **Can** **send** **money**:
+
+    - To merchants (for purchases).
+
+    - To other users (via username, wallet ID, or public link).
+
+  - Can request payments from other users via a public payment link.
+
+  - Can receive money from merchants as refunds.
+
+  - Can view complete transaction history.
+
+- ###### 🛒 Merchant
+
+  - Merchants also have a wallet linked to their account.
+
+  - Can accept payments from users.
+
+  - Can refund money back to the user’s wallet.
+
+  - Can generate payment requests via public links.
+
+- ###### 💳 Wallet
+
+  - Every user/merchant has only one wallet.
+
+  - Wallet balance is updated in real time after every transaction.
+
+  - **Supports:**
+
+    - Credits (Add money, receive from user/merchant).
+
+    - Debits (Send money, refund, withdrawal).
+
+- ###### 🔐 KYC + Security
+
+  - Each user must complete KYC verification (basic details + 4-digit PIN).
+
+  - PIN adds transaction-level security like UPI.
+
+  - Transactions above ₹500 require PIN; small transfers do not.
+
+- ###### 💸 Transactions
+
+  - All payments are wallet-to-wallet transfers.
+
+  - Transactions are recorded in the WalletTransaction model with:
+
+  - **amount**
+
+    - type (credit/debit)
+
+    - status (pending, success, failed, refunded, disputed)
+
+    - sender + receiver
+
+    - transactionId
+
+    - timestamps
+
+- ###### 🔗 Public Payment Links
+
+  - Users/Merchants can create payment links with:
+
+  - **amount**
+
+    - reason (description for payment)
+
+  - These links can be shared with multiple users for easy payment collection.
+
+  - **Example:**
+
+    - Merchant creates a link for ₹999 "Concert Ticket".
+
+    - Users open the link and pay directly via their wallet.
+
+- ###### 🛡️ Refunds & Disputes
+
+  - Merchants can initiate refunds for users.
+
+  - Users can raise disputes if a transaction is incorrect.
+
+```
+Refunds and disputes are tracked under the WalletTransaction model.
 ```
 
-To see all available targets to run for a project, run:
+---
 
-```sh
-npx nx show project auth-service
+# 📡 REST API Endpoints
+
+#### 🔑 Auth
+
+```
+POST /auth/register      → Register new user/merchant
+POST /auth/login         → Login
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+#### 👤 User / Merchant
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Add new projects
-
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
-
-```sh
-npx nx g @nx/node:app demo
+```
+GET  /users/:id          → Get user details
+POST /users/:id/kyc      → Submit KYC + 4-digit PIN
+GET  /merchants/:id      → Get merchant details
 ```
 
-To generate a new library, use:
+#### 💳 Wallet
 
-```sh
-npx nx g @nx/node:lib mylib
+```
+GET  /wallet/:id         → Get wallet balance
+POST /wallet/add-money   → Add funds (via dummy bank)
+POST /wallet/withdraw    → Withdraw funds (to dummy bank)
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+#### 🔄 Transactions
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```
+POST /transactions/send   → Send money (user→user or user→merchant)
+GET  /transactions/:id    → Get transaction details
+POST /transactions/refund → Refund a transaction (merchant→user)
+```
 
+#### 🔗 Payment Links
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```
+POST /payment-links       → Create a payment link
+GET  /payment-links/:id   → Get link details
+POST /payment-links/pay   → Pay using a payment link
+```
 
-## Install Nx Console
+#### 🚨 Disputes
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+```
+POST /disputes            → Raise a dispute
+GET  /disputes/:id        → Check dispute status
+PUT  /disputes/:id/resolve → Resolve or reject dispute
+```
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+---
 
-## Useful links
+# ER Diagram
 
-Learn more:
+![ER Diagram](./assets/wallet-erd.png)
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+---
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## 🎥 Project Demo
+
+![Quick Preview](assets/demo.gif)
+
+🎥 **Full Demo Video:** [Watch on YouTube](https://youtu.be/your_video_id)
+
+---
+
+## 🛠 Tech Stack
+
+**Frontend:**  
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-38B2AC?logo=tailwindcss&logoColor=white)
+
+**Backend:**  
+![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white)  
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?logo=postgresql&logoColor=white)
+
+**DevOps & Tools:**  
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)  
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?logo=github-actions&logoColor=white)
+
+---
+
+**Repo setup:** [Paytm 1](https://projects.100xdevs.com/tracks/Paytm/paytm17-1)
+
+**Adding WebHooks:** [Paytm 2](https://projects.100xdevs.com/tracks/PayTM2/paytm2-1)
